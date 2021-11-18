@@ -76,30 +76,92 @@
 
 - Home view on /src/views/home.pug
 
-  ```html5
-  doctype html
-  html(lang="en")
-    head
-      meta(charset="UTF-8")
-      meta(http-equiv="X-UA-Compatible", content="IE=edge")
-      meta(name="viewport", content="width=device-width, initial-scale=1.0")
-      title Noom
-      link(rel="stylesheet", href="https://unpkg.com/mvp.css")
-    body
-      header
-        h1 It works!
-      main
-        h2 Welcome to Noom
-      script(src="/public/js/app.js")
-  ```
+  - ```html5
+    doctype html
+    html(lang="en")
+      head
+        meta(charset="UTF-8")
+        meta(http-equiv="X-UA-Compatible", content="IE=edge")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Noom
+        link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+      body
+        header
+          h1 It works!
+        main
+          h2 Welcome to Noom
+        script(src="/public/js/app.js")
+    ```
 
 - Set server.js to use view and js
-  ```js
-  app.set('views', __dirname + '/views'); // set views
-  app.use('/public', express.static(__dirname + '/public')); // use public, user can see
-  app.get('/', (req, res) => res.render('home')); // rendering home view
-  app.get('/*', (req, res) => res.redirect('/')); // redirect all urls to the root. we can hide and show
-  ```
+  - ```js
+    app.set('views', __dirname + '/views'); // set views
+    app.use('/public', express.static(__dirname + '/public')); // use public, user can see
+    app.get('/', (req, res) => res.render('home')); // rendering home view
+    app.get('/*', (req, res) => res.redirect('/')); // redirect all urls to the root. we can hide and show
+    ```
+
+## Chat with WebSockets
+
+- A WebSocket is a persistent connection between a client and server. WebSockets provide a bidirectional, full-duplex communications channel that operates over HTTP through a single TCP/IP socket connection.
+
+### Connect WebSocket
+
+- connect WebSocket on the server on `server.js`
+
+  - ```js
+    import http from 'http';
+    import WebSocket from 'ws';
+
+    const handleListen = () =>
+      console.log(`Listening on http://localhost:3000`);
+    // app.listen(3000, handleListen);
+
+    // http and websocket on the same server
+    // localhost can handle http, ws request on the same port.
+    const server = http.createServer(app);
+    const wss = new WebSocket.Server({ server });
+    // const wss = new WebSocket.Server(); // if you want to handle ws on the different port
+
+    server.listen(3000, handleListen);
+    ```
+
+- connect URL on `app.js`
+
+  - `new WebSocket(url [, protocols]);`
+
+  - ```js
+    const socket = new WebSocket(`ws://${window.location.host}`);
+    ```
+
+### Listening to the connection and WebSocket message
+
+- on app.js
+  - ```js
+    socket.addEventListener('open', () => {
+      console.log('Connected to the Server');
+    });
+    socket.addEventListener('close', () => {
+      console.log('Disconnected from the Server');
+    });
+    socket.addEventListener('message', (message) => {
+      console.log('Got this: ', message.data, ' from the Server');
+    });
+    setTimeout(() => {
+      socket.send('Hello from the Browser');
+    }, 10000);
+    ```
+- on server.js
+  - ```js
+    wss.on('connection', (socket) => {
+      console.log('Connected to the Browser');
+      socket.on('close', () => console.log('Disconnected form the Browser'));
+      socket.on('message', (message) => {
+        console.log(message.toString('utf8'));
+      });
+      socket.send('Hello!');
+    });
+    ```
 
 ## install dependencies after cloning from git
 

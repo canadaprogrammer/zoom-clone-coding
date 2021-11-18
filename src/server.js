@@ -1,3 +1,5 @@
+import http from 'http';
+import WebSocket from 'ws';
 import express from 'express';
 
 const app = express();
@@ -9,5 +11,22 @@ app.get('/', (req, res) => res.render('home'));
 app.get('/*', (req, res) => res.redirect('/'));
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
+// app.listen(3000, handleListen);
 
-app.listen(3000, handleListen);
+// http and websocket on the same server
+// localhost can handle http, ws request on the same port.
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+// const wss = new WebSocket.Server(); // if you want to handle ws on the different port
+
+// listen to connect WebSocket on the server
+wss.on('connection', (socket) => {
+  console.log('Connected to the Browser');
+  socket.on('close', () => console.log('Disconnected form the Browser'));
+  socket.on('message', (message) => {
+    console.log(message.toString('utf8'));
+  });
+  socket.send('Hello!');
+});
+
+server.listen(3000, handleListen);
