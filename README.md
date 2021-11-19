@@ -87,9 +87,12 @@
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
       body
         header
-          h1 It works!
+          h1 Noom
         main
-          h2 Welcome to Noom
+          ul
+          form#message
+            input(type="text", placeholder="Write a message", required)
+            button Send
         script(src="/public/js/app.js")
     ```
 
@@ -132,11 +135,14 @@
 
   - ```js
     const socket = new WebSocket(`ws://${window.location.host}`);
+
+    const messageList = document.querySelector('ul');
+    const messageForm = document.querySelector('form#message');
     ```
 
 ### Listening to the connection and WebSocket message
 
-- on app.js
+- on `app.js`
   - ```js
     socket.addEventListener('open', () => {
       console.log('Connected to the Server');
@@ -145,21 +151,104 @@
       console.log('Disconnected from the Server');
     });
     socket.addEventListener('message', (message) => {
-      console.log('Got this: ', message.data, ' from the Server');
+      const li = document.createElement('li');
+      messageList.appendChild(li);
+      li.innerText = message.data;
     });
-    setTimeout(() => {
-      socket.send('Hello from the Browser');
-    }, 10000);
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const input = messageForm.querySelector('input');
+      socket.send(input.value);
+      input.value = '';
+    });
     ```
-- on server.js
+- on `server.js`
   - ```js
     wss.on('connection', (socket) => {
       console.log('Connected to the Browser');
       socket.on('close', () => console.log('Disconnected form the Browser'));
       socket.on('message', (message) => {
-        console.log(message.toString('utf8'));
+        socket.send(message.toString('utf8'));
       });
-      socket.send('Hello!');
+    });
+    ```
+
+### Send message to all connected browsers
+
+- Save connected sockets and send the message back to all of the sockets on `server.js`
+
+  - ```js
+    const sockets = [];
+
+    wss.on('connection', (socket) => {
+      sockets.push(socket);
+      socket.on('message', (message) => {
+        sockets.forEach((aSocket) => aSocket.send(message.toString('utf8')));
+      });
+    });
+    ```
+
+### Message with the Nickname
+
+- Add nickname form on `home.pug`
+
+  - ```html5
+    form#nickname
+      input(type="text", placeholder="Choose a nickname")
+      button Save
+    ```
+
+- Object
+  - ```js
+    {
+      type: 'nickname',
+      payload: input.value,
+    },
+    {
+      type: 'message',
+      payload: input.value,
+    }
+    ```
+- Send the object as JSON to server on `app.js`
+
+  - ```js
+    const nicknameForm = document.querySelector('form#nickname');
+
+    const makeMessage = (type, payload) => {
+      const msg = { type, payload };
+      return JSON.stringify(msg);
+    };
+
+    nicknameForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const input = nicknameForm.querySelector('input');
+      socket.send(makeMessage('nickname', input.value));
+      input.value = '';
+    });
+    ```
+
+- Receive the JSON and send it back to all connected browsers on `server.js`
+
+  - Save the nickname to the socket
+  - ```js
+    wss.on('connection', (socket) => {
+      sockets.push(socket);
+      socket['nickname'] = 'Anonymous';
+
+      socket.on('message', (msg) => {
+        const message = JSON.parse(msg.toString('utf8'));
+
+        switch (message.type) {
+          case 'message':
+            sockets.forEach((aSocket) =>
+              aSocket.send(`${socket.nickname}: ${message.payload}`)
+            );
+            break;
+          case 'nickname':
+            socket['nickname'] = message.payload;
+            break;
+        }
+      });
     });
     ```
 

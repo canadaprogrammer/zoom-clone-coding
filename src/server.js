@@ -19,14 +19,31 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 // const wss = new WebSocket.Server(); // if you want to handle ws on the different port
 
+const sockets = [];
+
 // listen to connect WebSocket on the server
 wss.on('connection', (socket) => {
+  sockets.push(socket);
+  socket['nickname'] = 'Anonymous';
   console.log('Connected to the Browser');
   socket.on('close', () => console.log('Disconnected form the Browser'));
-  socket.on('message', (message) => {
-    console.log(message.toString('utf8'));
+  // socket.send('hello');
+  socket.on('message', (msg) => {
+    // socket.send(msg.toString('utf8'));
+
+    const message = JSON.parse(msg.toString('utf8'));
+    // send a message to all of the connected browser
+    switch (message.type) {
+      case 'message':
+        sockets.forEach((aSocket) =>
+          aSocket.send(`${socket.nickname}: ${message.payload}`)
+        );
+        break;
+      case 'nickname':
+        socket['nickname'] = message.payload;
+        break;
+    }
   });
-  socket.send('Hello!');
 });
 
 server.listen(3000, handleListen);
