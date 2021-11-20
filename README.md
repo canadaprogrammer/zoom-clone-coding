@@ -252,7 +252,108 @@
     });
     ```
 
-## install dependencies after cloning from git
+## Socket.IO
+
+- Socket.IO is a library that enables real-time, bidirectional and event-based communication between the browser and the server.
+- The client will try to establish a WebSocket connection if possible, and will fall back on HTTP long polling if not.
+  - Long poling is a technique where the server elects to hold a client's connection open for as long as possible, delivering a response only after data becomes available or a timeout threshold is reached.
+
+### Install Socket.IO
+
+- `npm i socket.io`
+
+  - Socket.IO was installed on a browser as well as on a server.
+  - `http://localhost:3000/socket.io/socket.io.js`
+
+- on `server.js`
+
+  - ```js
+    import SocketIO from 'socket.io';
+
+    const io = SocketIO(server);
+    io.on('connection', (socket) => {
+      console.log(socket);
+    });
+    ```
+
+- on `home.pug`
+  - ```html5
+    script(src="/socket.io/socket.io.js)
+    script(src="/public/js/app.js")
+    ```
+- on `app.js`
+  - ```js
+    const socket = io();
+    ```
+
+### Emitting events
+
+- You can emit events on one side and register listeners on the other.
+- You can send any number of arguments, and all serializable datastructures are supported, including binary objects like Buffer or TypedArray
+
+  - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.emit('event_name', 'world');
+    });
+
+    // client-side
+    socket.on('event_name', (arg) => {
+      console.log(arg); // 'world'
+    });
+    ```
+
+  - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.on('event_name', (arg1, arg2, arg3) => {
+        console.log(arg1); // 1
+        console.log(arg2); // '2'
+        console.log(arg3); // { 3: '4', 5: ArrayBuffer (1) [ 6 ] }
+      });
+    });
+
+    // client-side
+    socket.emit('event_name', 1, '2', { 3: '4', 5: Buffer.from([6]) });
+    ```
+
+- You can add a callback as **the last argument** of the `emit()`, and this callback will be called once the other side acknowledges the event
+
+  - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.on('enter_room', (msg, callback) => {
+        console.log(msg); // { payload: 'room name' }
+        callback({
+          status: 'ok',
+        });
+      });
+    });
+
+    // client-size
+    socket.emit('enter_room', { payload: input.value }, (response) => {
+      console.log(response.status); // 'ok'
+    });
+    ```
+
+  - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.on('enter_room', (msg, done) => {
+        console.log(msg);
+        setTimeout(() => {
+          done('hello from the backend');
+        }, 3000);
+      });
+    });
+
+    // client-size
+    socket.emit('enter_room', { payload: input.value }, (msg) => {
+      console.log('The backend say: ', msg);
+    });
+    ```
+
+## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
 - `npm install`
