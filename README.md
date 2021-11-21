@@ -353,6 +353,188 @@
     });
     ```
 
+### Server API
+
+- socket.id
+
+  - (String) A unique identifier for the session, that comes from the underlying Client.
+
+- socket.rooms
+
+  - (Set) A Set of strings identifying the rooms this client is in.
+
+- socket.emit(eventName[, ...arg][, ack])
+
+  - Emits an event to the socket identified by the string name. Any other parameters can be included. All serializable datastructures are supported, including `Buffer`.
+  - (overrides `EventEmitter.emit`)
+  - Returns `true`
+  - `eventName` (String)
+  - `args`
+  - `ack` (Function)
+
+    - `ack` will be called with the client's answer or the server's.
+    - If socket.on doesn't have its callback on the other side, `ack` won't be called.
+
+    ```js
+    // server-side
+    socket.on('new_message', (message, room) => {
+      // no callback fn.
+      socket.to(room).emit('new_message', message);
+    });
+
+    // client-side
+    socket.emit('new_message', message, roomName, () => {
+      // `ack` won't be called.
+      printMessage(`You: ${message}`);
+    });
+    ```
+
+    ```js
+    // server-side
+    socket.on('new_message', (message, room, done) => {
+      // done is the callback fn.
+      socket.to(room).emit('new_message', message);
+      done();
+    });
+
+    // client-side
+    socket.emit('new_message', message, roomName, () => {
+      // `ack` will be called.
+      printMessage(`You: ${message}`);
+    });
+    ```
+
+- socket.on(eventName, callback)
+
+  - Register a new handler for the given event.
+  - (inherited from `EventEmitter`)
+  - Returns `Socket`
+  - `eventName` (String)
+  - `callback` (Function)
+
+- socket.onAny(callback)
+
+  - Register a new catch-all listener
+
+- socket.join(room)
+
+  - Adds the socket to the given `room` or to the list of rooms.
+  - Returns `void` | `Promise`
+  - `room` (string) | (string[])
+
+- socket.to(room)
+
+  - Sets a modifier for a subsequent event emission that the event will only be broadcast to clients that have joined the given `room` (the socket itself being excluded).
+  - To emit to multiple rooms, you can call `to` several times
+  - Returns `Socket` for chaining.
+  - `room` (string) | (string[])
+
+- Event: 'disconnecting'
+
+  - Fired when the client is going to be disconnected (but hasn't left its `rooms` yet).
+  - `reason` (String) the reason of the disconnection (either client or server-side)
+
+  - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.onAny((event) => {
+        console.log(`Socket Event:${event}`); // Socket Event:enter_room
+      });
+      socket.on('enter_room', (roomName, done) => {
+        console.log(socket.rooms); // Set { <socket.id> }
+        socket.join(roomName);
+        console.log(socket.rooms); // Set { <socket.id>, { payload: 'room1' } }
+        setTimeout(() => {
+          done('Hello from the backend');
+        }, 3000);
+        socket.to(roomName).emit('welcome'); // sending socket didn't get 'welcome' message
+      });
+    });
+
+    // client-side
+    socket.on('welcome', () => {
+      const ul = room.querySelector('ul');
+      const li = document.createElement('li');
+      li.innerText = 'Someone joined!'; // The other browsers can see this message
+      ul.appendChild(li);
+    });
+    ```
+
+### Room, Nickname, Chat
+
+    - ```js
+    // server-side
+    io.on('connection', (socket) => {
+      socket.onAny((event) => {
+        console.log(`Socket Event:${event}`); // Socket Event:enter_room
+      });
+      socket.on('enter_room', (roomName, nickname, done) => {
+        console.log(socket.rooms); // Set { <socket.id> }
+        socket.join(roomName);
+        console.log(socket.rooms); // Set { <socket.id>, { payload: 'room1' } }
+
+        socket['nickname'] = nickname;
+
+        setTimeout(() => {
+          done('Hello from the backend');
+        }, 3000);
+
+        socket.to(roomName).emit('welcome', socket['nickname']); // sending socket didn't get 'welcome' message
+
+        socket.on('disconnecting', () => {
+          socket.rooms.forEach((room) =>
+            socket.to(room).emit('bye', socket['nickname'])
+          );
+        });
+
+        socket.on('new_message', (message, room, done) => {
+          socket.to(room).emit('new_message', message, socket['nickname']);
+          done();
+        });
+      });
+    });
+
+    // client-side
+    welcomeForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const roomInput = welcome.querySelector('#room');
+      roomName = roomInput.value;
+
+      // enter a nickname
+      const nicknameInput = welcome.querySelector('#nickname');
+      const nickname = nicknameInput.value;
+
+      socket.emit('enter_room', roomName, nickname, () => {
+        welcome.hidden = true;
+        chat.hidden = false;
+        const h2 = document.querySelector('h2');
+        h2.innerText = `Room: ${roomName}`;
+
+        // send a message
+        const messageForm = chat.querySelector('#message');
+        messageForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const input = messageForm.querySelector('input');
+          const message = input.value;
+          socket.emit('new_message', message, roomName, () => {
+            printMessage(`You: ${message}`);
+          });
+          input.value = '';
+        });
+      });
+      roomInput.value = '';
+      nicknameInput.value = '';
+    });
+
+    socket.on('welcome', (nickname) => printMessage(`${nickname} joined!`));
+
+    socket.on('bye', (nickname) => printMessage(`${nickname} left!`));
+
+    socket.on('new_message', (msg, nickname) =>
+      printMessage(`${nickname}: ${msg}`)
+    );
+    ```
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`

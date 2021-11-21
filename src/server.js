@@ -17,12 +17,27 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 // localhost can handle http, ws request on the same port.
 const server = http.createServer(app);
 const io = SocketIO(server);
+
 io.on('connection', (socket) => {
-  socket.on('enter_room', (msg, done) => {
-    console.log(msg);
-    setTimeout(() => {
+  // socket['nickname'] = 'Anonymous';
+  socket.onAny((event) => {
+    console.log(`Socket Event:${event}`); // Socket Event:enter_room
+  });
+  socket.on('enter_room', (roomName, nickname, done) => {
+    socket['nickname'] = nickname;
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit('welcome', socket['nickname']);
+    socket.on('disconnecting', () => {
+      socket.rooms.forEach((room) =>
+        socket.to(room).emit('bye', socket['nickname'])
+      );
+    });
+    // socket.on('nickname', (nickname) => (socket['nickname'] = nickname));
+    socket.on('new_message', (message, room, done) => {
+      socket.to(room).emit('new_message', message, socket['nickname']);
       done();
-    }, 3000);
+    });
   });
 });
 server.listen(3000, handleListen);
