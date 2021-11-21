@@ -54,3 +54,17 @@ socket.on('bye', (nickname) => printMessage(`${nickname} left!`));
 socket.on('new_message', (msg, nickname) =>
   printMessage(`${nickname}: ${msg}`)
 );
+
+// socket.on('room_change', (msg) => console.log(msg));
+socket.on('room_change', (rooms) => {
+  const roomList = welcome.querySelector('ul');
+  roomList.innerHTML = '';
+  if (rooms.length === 0) {
+    return;
+  }
+  rooms.forEach((room) => {
+    const li = document.createElement('li');
+    li.innerText = room;
+    roomList.appendChild(li);
+  });
+});

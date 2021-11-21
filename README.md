@@ -535,6 +535,69 @@
     );
     ```
 
+### Adapter
+
+- An Adapter is a server-side component which is responsible for broadcasting events to all or a subset of clients.
+
+- On Adapter, if the key is on `rooms`, but not `sids`, it's a public room.
+- `io.sockets.adapter`
+
+  ```bash
+  rooms: Map(3) {
+    'DIvCFUEP18LzTnO7AAAB' => Set(1) { 'DIvCFUEP18LzTnO7AAAB' },
+    'Tz-EfGtMbZn_fvw1AAAF' => Set(1) { 'Tz-EfGtMbZn_fvw1AAAF' },
+    'aa' => Set(1) { 'Tz-EfGtMbZn_fvw1AAAF' }
+  },
+  sids: Map(2) {
+    'DIvCFUEP18LzTnO7AAAB' => Set(1) { 'DIvCFUEP18LzTnO7AAAB' },
+    'Tz-EfGtMbZn_fvw1AAAF' => Set(2) { 'Tz-EfGtMbZn_fvw1AAAF', 'aa' }
+  },
+  ```
+
+- Opened room notification
+
+  - ```js
+    // server-size
+    const publicRooms = () => {
+      // const sids = io.sockets.adapter.sids;
+      // const rooms = io.sockets.adapter.rooms;
+      const {
+        sockets: {
+          adapter: { sids, rooms },
+        },
+      } = io;
+      const publicRooms = [];
+      rooms.forEach((_, key) => {
+        if (sids.get(key) === undefined) {
+          publicRooms.push(key);
+        }
+      });
+      return publicRooms;
+    };
+    io.on('connection', (socket) => {
+      socket.on('enter_room', (roomName, nickname, done) => {
+        io.sockets.emit('room_change', publicRooms());
+      });
+      socket.on('disconnect', () => {
+        io.sockets.emit('room_change', publicRooms());
+      });
+    });
+
+    // client-side
+    socket.on('room_change', (rooms) => {
+      const roomList = welcome.querySelector('ul');
+      roomList.innerHTML = '';
+      if (rooms.length === 0) {
+        return;
+      }
+      rooms.forEach((room) => {
+        const li = document.createElement('li');
+        li.innerText = room;
+        roomList.appendChild(li);
+      });
+    });
+    ```
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
