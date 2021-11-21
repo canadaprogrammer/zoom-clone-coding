@@ -15,6 +15,11 @@ const printMessage = (message) => {
   ul.appendChild(li);
 };
 
+const printNumUsers = (num) => {
+  const h3 = chat.querySelector('h3');
+  h3.innerText = `Room: ${roomName} (${num})`;
+};
+
 // enter a room
 welcomeForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -25,11 +30,10 @@ welcomeForm.addEventListener('submit', (event) => {
   const nicknameInput = welcome.querySelector('#nickname');
   const nickname = nicknameInput.value;
 
-  socket.emit('enter_room', roomName, nickname, () => {
+  socket.emit('enter_room', roomName, nickname, (countRoom) => {
     welcome.hidden = true;
     chat.hidden = false;
-    const h2 = document.querySelector('h2');
-    h2.innerText = `Room: ${roomName}`;
+    printNumUsers(countRoom);
 
     // send a message
     const messageForm = chat.querySelector('#message');
@@ -47,9 +51,15 @@ welcomeForm.addEventListener('submit', (event) => {
   nicknameInput.value = '';
 });
 
-socket.on('welcome', (nickname) => printMessage(`${nickname} joined!`));
+socket.on('welcome', (nickname, countRoom) => {
+  printNumUsers(countRoom);
+  printMessage(`${nickname} joined!`);
+});
 
-socket.on('bye', (nickname) => printMessage(`${nickname} left!`));
+socket.on('bye', (nickname, countRoom) => {
+  printNumUsers(countRoom);
+  printMessage(`${nickname} left!`);
+});
 
 socket.on('new_message', (msg, nickname) =>
   printMessage(`${nickname}: ${msg}`)

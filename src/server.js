@@ -35,6 +35,10 @@ const publicRooms = () => {
   return publicRooms;
 };
 
+const countRoom = (room) => {
+  return io.sockets.adapter.rooms.get(room)?.size;
+};
+
 io.on('connection', (socket) => {
   // socket['nickname'] = 'Anonymous';
   socket.onAny((event) => {
@@ -44,21 +48,21 @@ io.on('connection', (socket) => {
   socket.on('enter_room', (roomName, nickname, done) => {
     socket['nickname'] = nickname;
     socket.join(roomName);
-    done();
+    done(countRoom(roomName));
     // send a message to one socket
-    socket.to(roomName).emit('welcome', socket['nickname']);
+    socket
+      .to(roomName)
+      .emit('welcome', socket['nickname'], countRoom(roomName));
     // send a message to all sockets
     io.sockets.emit('room_change', publicRooms());
   });
   // disconnecting
   socket.on('disconnecting', () => {
     socket.rooms.forEach((room) =>
-      socket.to(room).emit('bye', socket['nickname'])
+      socket.to(room).emit('bye', socket['nickname'], countRoom(room) - 1)
     );
   });
-  socket.on('disconnect', () => {
-    io.sockets.emit('room_change', publicRooms());
-  });
+  socket.on('disconnect', () => io.sockets.emit('room_change', publicRooms()));
   // socket.on('nickname', (nickname) => (socket['nickname'] = nickname));
   socket.on('new_message', (message, room, done) => {
     socket.to(room).emit('new_message', message, socket['nickname']);

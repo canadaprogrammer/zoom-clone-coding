@@ -598,6 +598,42 @@
     });
     ```
 
+- Count users on the room
+
+  - ```js
+    // server-side
+    const countRoom = (room) => {
+      return io.sockets.adapter.rooms.get(room)?.size;
+    };
+    socket.on('enter_room', (roomName, nickname, done) => {
+      done(countRoom(roomName));
+      socket
+        .to(roomName)
+        .emit('welcome', socket['nickname'], countRoom(roomName));
+    });
+    socket.on('disconnecting', () => {
+      socket.rooms.forEach((room) =>
+        socket.to(room).emit('bye', socket['nickname'], countRoom(room) - 1)
+      );
+    });
+
+    // client-side
+    const printNumUsers = (num) => {
+      const h3 = chat.querySelector('h3');
+      h3.innerText = `Room: ${roomName} (${num})`;
+    };
+    socket.emit('enter_room', roomName, nickname, (countRoom) => {
+      printNumUsers(countRoom);
+    });
+    socket.on('welcome', (nickname, countRoom) => {
+      printNumUsers(countRoom);
+    });
+
+    socket.on('bye', (nickname, countRoom) => {
+      printNumUsers(countRoom);
+    });
+    ```
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
