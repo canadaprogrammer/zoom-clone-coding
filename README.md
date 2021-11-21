@@ -634,6 +634,41 @@
     });
     ```
 
+### Admin UI
+
+- Socket.IO admin UI can be used to have an overview of the state of your Socket.IO deployment.
+- Install
+
+  - `npm i @socket.io/admin-ui`
+  - Server-side on server.js
+
+    - ```js
+      import { Server } from 'socket.io';
+      import { instrument } from '@socket.io/admin-ui';
+
+      const io = new Server(server, {
+        cors: {
+          origin: ['https://admin.socket.io'],
+          credentials: true,
+        },
+      });
+
+      instrument(io, {
+        auth: {
+          type: 'basic',
+          username: 'admin',
+          password:
+            '$2b$10$heqvAkYMez.Va6Et2uXInOnkCT6/uQj1brkrbyG3LpopDklcq7ZOS', // "changeit" encrypted with bcrypt
+        },
+      });
+      ```
+
+  - Client-side
+    - `https://admin.socket.io
+    - Connection
+      - Server URL: `http://localhost:3000/admin` or `https://example.com/admin`
+      - Path: empty
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`

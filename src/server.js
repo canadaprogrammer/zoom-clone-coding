@@ -1,5 +1,6 @@
 import http from 'http';
-import SocketIO from 'socket.io';
+import { Server } from 'socket.io';
+import { instrument } from '@socket.io/admin-ui';
 import express from 'express';
 
 const app = express();
@@ -16,7 +17,16 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 // http and websocket on the same server
 // localhost can handle http, ws request on the same port.
 const server = http.createServer(app);
-const io = SocketIO(server);
+const io = new Server(server, {
+  cors: {
+    origin: ['https://admin.socket.io'],
+    credentials: true,
+  },
+});
+
+instrument(io, {
+  auth: false,
+});
 
 const publicRooms = () => {
   // const sids = io.sockets.adapter.sids;
