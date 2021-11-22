@@ -669,6 +669,143 @@
       - Server URL: `http://localhost:3000/admin` or `https://example.com/admin`
       - Path: empty
 
+## Video
+
+- `navigator.mediaDevices`
+
+  - The `navigator.mediaDevices` read-only property returns a `MediaDevices` object, which provides access to connected media input devices like cameras and microphones, as well as screen sharing.
+
+- `navigator.mediaDevices.getUserMedia()`
+
+  - It returns a `Promise` that resolves to `MediaStream` object. If the user denies permission, or matching media is nlt available, then the promise is rejected with `NotAllowedError` or `NotFoundError` respectively.
+  - ```js
+    async function getMedia(constraints) {
+      let mediaStream = null;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: {
+            /* camera resolution */
+            width: 1280,
+            height: 720
+            /* min, max, or exact(a.k.a min == max) */
+            width: { min: 1024, max: 1920 },
+            height: { min: 576, max: 1080}
+            /* On mobile devices, the following will prefer the front camera (if one is available) over the rear one */
+            facingMode: "user"
+            /* To require the rear camera */
+            facingMode: { exact: "environment" }
+            /* If you have a `deviceId` from `mediaDevices.enumerateDevices(), you can use it to request a specific device */
+            deviceId: myPreferredCameraDeviceId
+            /* To require the specific camera */
+            deviceId: { exact: myExactCameraOrBustDeviceId }
+          }
+        });
+        /* use the stream */
+      } catch (err) {
+        /* handle the error */
+      }
+    }
+    ```
+
+- `navigator.mediaDevices.enumerateDevices()`
+
+  - The method requests a list of the available media input and output devices. The returned `Promise` is resolved with `MediaDeviceInfo` array describing the devices.
+
+- `mediaStream.getAudioTracks()`
+
+  - This methods of the `MediaStream` interface returns a sequence that represents all the `MediaStreamTrack` objects in this stream's track set where MediaStreamTrack.kind is `audio`.
+  - You can mute or unmute by `enabled`.
+    - `mediaStream.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));`
+
+- `mediaStream.getVideoTracks()`
+
+- ```js
+  const socket = io();
+
+  const myFace = document.querySelector('#myFace');
+
+  let myStream;
+  let muted = false;
+  let cameraOff = false;
+
+  const muteBtn = document.querySelector('#mute');
+  const cameraBtn = document.querySelector('#camera');
+  const camerasSelect = document.querySelector('#cameras');
+
+  async function getCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      // get only videoinput
+      const cameras = devices.filter((device) => device.kind === 'videoinput');
+      const currentCamera = myStream.getVideoTracks()[0];
+      // cameras selection
+      cameras.forEach((camera) => {
+        const option = document.createElement('option');
+        option.value = camera.deviceId;
+        option.innerText = camera.label;
+        if (currentCamera.label == camera.label) {
+          option.selected = true;
+        }
+        camerasSelect.appendChild(option);
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  async function getMedia(deviceId) {
+    try {
+      // get video
+      myStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: deviceId
+          ? { deviceId: { exact: deviceId } }
+          : { facingMode: 'user' },
+      });
+      // show video
+      myFace.srcObject = myStream;
+      if (!deviceId) {
+        await getCameras();
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  async function selectCamera(deviceId) {
+    await getMedia(deviceId);
+  }
+  getMedia();
+  camerasSelect.addEventListener('change', (event) => {
+    selectCamera(event.target.value);
+  });
+  muteBtn.addEventListener('click', () => {
+    // audio tracking to mute or unmute
+    myStream
+      .getAudioTracks()
+      .forEach((track) => (track.enabled = !track.enabled));
+    if (!muted) {
+      muteBtn.innerText = 'Unmute';
+      muted = true;
+    } else {
+      muteBtn.innerText = 'Mute';
+      muted = false;
+    }
+  });
+  cameraBtn.addEventListener('click', () => {
+    // video tracking to turn on or turn off
+    myStream
+      .getVideoTracks()
+      .forEach((track) => (track.enabled = !track.enabled));
+    if (cameraOff) {
+      cameraBtn.innerText = 'Turn Camera Off';
+      cameraOff = false;
+    } else {
+      cameraBtn.innerText = 'Turn Camera On';
+      cameraOff = true;
+    }
+  });
+  ```
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
