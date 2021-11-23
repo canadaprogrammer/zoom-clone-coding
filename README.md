@@ -720,6 +720,8 @@
 
 - `mediaStream.getVideoTracks()`
 
+- `mediaStream.getTracks()`
+
 - ```js
   const socket = io();
 
@@ -805,6 +807,91 @@
     }
   });
   ```
+
+## WebRTC (Web Real-Time Communication)
+
+### Signaling and video calling
+
+- WebRTC allows real-time, peer-to-peer, media exchange between two devices. A connection is established through a discovery and negotiation precess called **signaling**.
+
+- Establishing a WebRTC connection between two devices requires the use of a **signaling server** to resolve how to connect them over the internet.
+
+- Signaling transaction flow
+
+  - The signaling process involves this exchange of messages among a number of points:
+    - Each user's client running within a web browser
+    - Each user's web browser
+    - The signaling server
+    - The web server hosting the chat service
+
+  1. getUserMedia
+
+  2. create RTCPeerConnection
+
+     - `new RTCPeerConnection()`
+
+  3. enter room name
+
+  4. emit 'join_room' from caller
+
+     - `socket.emit('join_room', input.value);`
+
+  5. add track into RTCPeerConnection
+
+     - `myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track, myStream));`
+
+  6. join the room and emit welcome to the room from server
+
+  7. caller creates an offer
+
+     - `const offer = await myPeerConnection.createOffer();`
+
+  8. change the local description associated with the connection on caller
+
+     - `myPeerConnection.setLocalDescription(offer);`
+
+  9. emit the offer from caller
+
+     - `socket.emit('offer', offer, roomName);`
+
+  10. emit the offer to the room from server
+
+      - `socket.to(roomName).emit('offer', offer);`
+
+  11. callee receives the offer
+
+  12. set the specified session description as the remote peer's current offer.
+
+      - `myPeerConnection.setRemoteDescription(offer);`
+
+  13. callee creates the answer
+
+      - `const answer = await myPeerConnection.createAnswer();`
+
+  14. change the local description associated with the connection on callee
+
+  - `myPeerConnection.setLocalDescription(answer);`
+
+  15. emit the answer from callee
+
+  - `socket.emit('answer', answer, roomName);`
+
+  16. emit the answer to the room from server
+
+      - `socket.to(roomName).emit('answer', answer);`
+
+  17. caller receives the answer
+
+  18. set the specified session description as the remote peer's current answer.
+
+      - `myPeerConnection.setRemoteDescription(answer);`
+
+![Signaling transaction flow](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_signaling_diagram.svg)
+
+- ICE candidate exchange process
+  - When each peer's ICE layer begins to send candidates, it enters into an exchange among the various points in the chain that looks like this:
+
+![ICE candidate exchange process](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_ice_candidate_exchange.svg)
 
 ## Install dependencies after cloning from git
 

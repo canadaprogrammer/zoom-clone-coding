@@ -1,14 +1,19 @@
 const socket = io();
 
 const myFace = document.querySelector('#myFace');
+const muteBtn = document.querySelector('#mute');
+const cameraBtn = document.querySelector('#camera');
+const camerasSelect = document.querySelector('#cameras');
+
+const call = document.querySelector('#call');
 
 let myStream;
 let muted = false;
 let cameraOff = false;
+let roomName;
+let myPeerConnection;
 
-const muteBtn = document.querySelector('#mute');
-const cameraBtn = document.querySelector('#camera');
-const camerasSelect = document.querySelector('#cameras');
+call.hidden = true;
 
 async function getCameras() {
   try {
@@ -48,7 +53,9 @@ async function getMedia(deviceId) {
 async function selectCamera(deviceId) {
   await getMedia(deviceId);
 }
-getMedia();
+
+// getMedia();
+
 camerasSelect.addEventListener('change', (event) => {
   selectCamera(event.target.value);
 });
@@ -76,3 +83,57 @@ cameraBtn.addEventListener('click', () => {
     cameraOff = true;
   }
 });
+
+// Welcome Form (join a room)
+
+const welcome = document.querySelector('#welcome');
+const welcomeForm = welcome.querySelector('form');
+
+const initialCall = async () => {
+  welcome.hidden = true;
+  call.hidden = false;
+  await getMedia();
+  await makeConnection();
+};
+
+welcomeForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const input = welcomeForm.querySelector('input');
+  await initialCall();
+  socket.emit('join_room', input.value);
+  roomName = input.value;
+  input.value = '';
+});
+
+// Socket code
+
+socket.on('welcome', async () => {
+  // only working on caller
+  const offer = await myPeerConnection.createOffer();
+  myPeerConnection.setLocalDescription(offer);
+  console.log('sent the offer');
+  // send the offer to callee
+  socket.emit('offer', offer, roomName);
+});
+
+socket.on('offer', async (offer) => {
+  // only working on callee
+  myPeerConnection.setRemoteDescription(offer);
+  const answer = await myPeerConnection.createAnswer();
+  myPeerConnection.setLocalDescription(answer);
+  socket.emit('answer', answer, roomName);
+});
+
+socket.on('answer', (answer) => {
+  // only working on caller
+  myPeerConnection.setRemoteDescription(answer);
+});
+// WebRTC code
+
+function makeConnection() {
+  myPeerConnection = new RTCPeerConnection();
+  // add tracks into RTCPeerConnection
+  myStream
+    .getTracks()
+    .forEach((track) => myPeerConnection.addTrack(track, myStream));
+}
