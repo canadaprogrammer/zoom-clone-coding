@@ -870,11 +870,11 @@
 
   14. change the local description associated with the connection on callee
 
-  - `myPeerConnection.setLocalDescription(answer);`
+      - `myPeerConnection.setLocalDescription(answer);`
 
   15. emit the answer from callee
 
-  - `socket.emit('answer', answer, roomName);`
+      - `socket.emit('answer', answer, roomName);`
 
   16. emit the answer to the room from server
 
@@ -888,10 +888,39 @@
 
 ![Signaling transaction flow](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_signaling_diagram.svg)
 
-- ICE candidate exchange process
-  - When each peer's ICE layer begins to send candidates, it enters into an exchange among the various points in the chain that looks like this:
+- RTCIceCandidate
 
-![ICE candidate exchange process](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_ice_candidate_exchange.svg)
+  - The **RTCIceCandidate** interface - part of the WebRTC API - represents a candidate Interactive Connectivity Establishment(ICE) configuration which may be used to establish an RTCPeerConnection.
+  - An ICE candidate describes the protocols and routing needed for WebRTC to be able to communicate with a remote device. When starting a WebRTC peer connection, typically a number of candidates are proposed by each end of the connection, until they mutually agree upon one which describes the connection they decide will be best.
+  - ICE candidate exchange process
+    - When each peer's ICE layer begins to send candidates, it enters into an exchange among the various points in the chain that looks like this:
+
+  1. add event listener `icecandidate` and send the candidate to the server
+
+     - `myPeerConnection.addEventListener('icecandidate', (data) => socket.emit('ice', data.candidate, roomName));`
+
+  2. send ice candidate to the room from the server
+
+     - `socket.on('ice', (ice, roomName) => socket.to(roomName).emit('ice', ice));`
+
+  3. receive ice candidate from the server, and add the remote candidate to the **RTCPeerConnection**'s remote description, which describes the state of the remote end of the connection
+
+     - `socket.on('ice, (ice) => myPeerConnection.addIceCandidate(ice));`
+
+  ![ICE candidate exchange process](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_ice_candidate_exchange.svg)
+
+- Show peer's video
+
+  - add event listener `track`, and put the peer's stream to show the video
+
+    - The `track` event is sent to the `ontrack` event handler on **RTCPeerConnection**s after a new track has been added to an RTCtpReceiver which is part of the connection.
+
+      - ```js
+        myPeerConnection.addEventListener('track', (data) => {
+          const peerFace = document.querySelector('#peerFace');
+          peerFace.srcObject = data.streams[0];
+        });
+        ```
 
 ## Install dependencies after cloning from git
 

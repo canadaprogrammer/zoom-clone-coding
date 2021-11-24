@@ -118,22 +118,44 @@ socket.on('welcome', async () => {
 
 socket.on('offer', async (offer) => {
   // only working on callee
+  console.log('received the offer');
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   myPeerConnection.setLocalDescription(answer);
   socket.emit('answer', answer, roomName);
+  console.log('sent the answer');
 });
 
 socket.on('answer', (answer) => {
   // only working on caller
+  console.log('received the answer');
   myPeerConnection.setRemoteDescription(answer);
+});
+
+socket.on('ice', (ice) => {
+  console.log('received candidate');
+  myPeerConnection.addIceCandidate(ice);
 });
 // WebRTC code
 
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  myPeerConnection.addEventListener('icecandidate', handleIce);
+  myPeerConnection.addEventListener('track', handleTrack);
   // add tracks into RTCPeerConnection
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));
+}
+
+function handleIce(data) {
+  console.log('sent candidate');
+  socket.emit('ice', data.candidate, roomName);
+}
+
+function handleTrack(data) {
+  const peerFace = document.querySelector('#peerFace');
+  peerFace.srcObject = data.streams[0];
+  console.log('Peer stream:', data.streams[0]);
+  console.log('My stream:', myStream);
 }
