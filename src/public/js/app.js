@@ -21,6 +21,7 @@ async function getCameras() {
     const cameras = devices.filter((device) => device.kind === 'videoinput');
     const currentCamera = myStream.getVideoTracks()[0];
 
+    const option = document.createElement('option');
     cameras.forEach((camera) => {
       const option = document.createElement('option');
       option.value = camera.deviceId;
@@ -50,14 +51,22 @@ async function getMedia(deviceId) {
     console.log(err);
   }
 }
-async function selectCamera(deviceId) {
+async function handleCameraChange(deviceId) {
   await getMedia(deviceId);
+  if (myPeerConnection) {
+    const videoTrack = myStream.getVideoTracks()[0];
+    console.log('videoTrack', videoTrack);
+    const videoSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === 'video');
+    videoSender.replaceTrack(videoTrack);
+  }
 }
 
 // getMedia();
 
 camerasSelect.addEventListener('change', (event) => {
-  selectCamera(event.target.value);
+  handleCameraChange(event.target.value);
 });
 muteBtn.addEventListener('click', () => {
   myStream

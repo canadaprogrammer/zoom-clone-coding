@@ -909,18 +909,44 @@
 
   ![ICE candidate exchange process](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling/webrtc_-_ice_candidate_exchange.svg)
 
-- Show peer's video
+### Show peer's video
 
-  - add event listener `track`, and put the peer's stream to show the video
+- add event listener `track`, and put the peer's stream to show the video
 
-    - The `track` event is sent to the `ontrack` event handler on **RTCPeerConnection**s after a new track has been added to an RTCtpReceiver which is part of the connection.
+  - The `track` event is sent to the `ontrack` event handler on **RTCPeerConnection**s after a new track has been added to an RTCtpReceiver which is part of the connection.
 
-      - ```js
-        myPeerConnection.addEventListener('track', (data) => {
-          const peerFace = document.querySelector('#peerFace');
-          peerFace.srcObject = data.streams[0];
-        });
-        ```
+  - ```js
+    myPeerConnection.addEventListener('track', (data) => {
+      const peerFace = document.querySelector('#peerFace');
+      peerFace.srcObject = data.streams[0];
+    });
+    ```
+
+### Reflecting changed camera
+
+- RTCPeerConnection.getSender()
+
+  - It returns an array of **RTCRtpSender** objects, and a sender object provides methods and properties for examining and controlling the encoding and transmission of the track's data.
+
+  - The **RTCRtpSender** interface provides the ability to control and obtain details about how a particular MediaStreamTrack is encoded and sent to a remote peer.
+
+  - Change video track by using `replaceTrack()`
+
+  - ```js
+    async function handleCameraChange(deviceId) {
+      await getMedia(deviceId);
+      if (myPeerConnection) {
+        // get the changed video track
+        const videoTrack = myStream.getVideoTracks()[0];
+        // get video track from the RTCRtpSender
+        const videoSender = myPeerConnection
+          .getSenders()
+          .find((sender) => sender.track.kind === 'video');
+        // replace the video track of RTCRtpSender to changed one
+        videoSender.replaceTrack(videoTrack);
+      }
+    }
+    ```
 
 ## Install dependencies after cloning from git
 
