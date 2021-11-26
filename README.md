@@ -948,6 +948,37 @@
     }
     ```
 
+## Install localtunnel to share your server
+
+- `npm i localtunnel`
+- `npm i -g localtunnel`
+- `lt` for seethe options
+- `lt --port 3000`
+
+## STUN (Session Traversal Utilities for NAT) server
+
+- A STUN server allows NAT(Network Address Translator) clients (i.e. IP Phones behind a firewall) to setup phone calls to a VoIP provider hosted outside of the local network.
+
+  - use google public stun server
+
+  - ```js
+    function makeConnection() {
+      myPeerConnection = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: [
+              'stun:stun.l.google.com:19302',
+              'stun:stun1.l.google.com:19302',
+              'stun:stun2.l.google.com:19302',
+              'stun:stun3.l.google.com:19302',
+              'stun:stun4.l.google.com:19302',
+            ],
+          },
+        ],
+      });
+    }
+    ```
+
 ## Install dependencies after cloning from git
 
 - `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
