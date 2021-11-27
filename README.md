@@ -948,14 +948,14 @@
     }
     ```
 
-## Install localtunnel to share your server
+### Install localtunnel to share your server
 
 - `npm i localtunnel`
 - `npm i -g localtunnel`
 - `lt` for seethe options
 - `lt --port 3000`
 
-## STUN (Session Traversal Utilities for NAT) server
+### STUN (Session Traversal Utilities for NAT) server
 
 - A STUN server allows NAT(Network Address Translator) clients (i.e. IP Phones behind a firewall) to setup phone calls to a VoIP provider hosted outside of the local network.
 
@@ -978,6 +978,52 @@
       });
     }
     ```
+
+### Data Channel
+
+- create data channel
+
+  - ```js
+      let myDataChannel;
+
+      socket.on('welcome', async () => {
+        // only working on caller
+        myDataChannel = myPeerConnection.createDataChannel('chat');
+        myDataChannel.addEventListener('message', chatMessage);
+
+      socket.on('offer', async (offer) => {
+    // only working on callee
+        myPeerConnection.addEventListener('datachannel',  (event) => {
+          myDataChannel = event.channel;
+          myDataChannel.addEventListener('message', chatMessage);
+        });;
+
+      chatForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const input = chatForm.querySelector('input');
+        // myDataChannel.onopen = () => {
+        myDataChannel.send(input.value);
+        console.log('sent chat message');
+        // };
+        input.value = '';
+      });
+
+      const chatMessage = (message) => {
+        console.log('message', message);
+        const list = document.createElement('li');
+        list.innerText = message.data;
+        chatList.appendChild(list);
+      };
+    ```
+
+## conclusion
+
+- WebRTC for using video and audio is good for peer to peer, but it's not good for multi peer consoles.
+- Using Data channel of WebRTC is good for multiple remote peers, because this can be useful for back-channel content such as images, file transfer, text chat, game update packets, and so forth, not video and audio.
+
+- If you use a server, Socket.IO is good choice.
+- If you want to send messages peer to peer, but you don't have a server, data channel is a way.
+-
 
 ## Install dependencies after cloning from git
 

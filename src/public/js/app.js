@@ -4,14 +4,18 @@ const myFace = document.querySelector('#myFace');
 const muteBtn = document.querySelector('#mute');
 const cameraBtn = document.querySelector('#camera');
 const camerasSelect = document.querySelector('#cameras');
-
 const call = document.querySelector('#call');
+
+const chat = document.querySelector('#chat');
+const chatForm = chat.querySelector('form');
+const chatList = chat.querySelector('ul');
 
 let myStream;
 let muted = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
+let myDataChannel;
 
 call.hidden = true;
 
@@ -118,6 +122,9 @@ welcomeForm.addEventListener('submit', async (event) => {
 
 socket.on('welcome', async () => {
   // only working on caller
+  myDataChannel = myPeerConnection.createDataChannel('chat');
+  myDataChannel.addEventListener('message', chatMessage);
+  console.log('made data channel');
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer);
   console.log('sent the offer');
@@ -127,6 +134,10 @@ socket.on('welcome', async () => {
 
 socket.on('offer', async (offer) => {
   // only working on callee
+  myPeerConnection.addEventListener('datachannel', (event) => {
+    myDataChannel = event.channel;
+    myDataChannel.addEventListener('message', chatMessage);
+  });
   console.log('received the offer');
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
@@ -145,6 +156,7 @@ socket.on('ice', (ice) => {
   console.log('received candidate');
   myPeerConnection.addIceCandidate(ice);
 });
+
 // WebRTC code
 
 function makeConnection() {
@@ -180,3 +192,22 @@ function handleTrack(data) {
   console.log('Peer stream:', data.streams[0]);
   console.log('My stream:', myStream);
 }
+
+// chat
+
+chatForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const input = chatForm.querySelector('input');
+  // myDataChannel.onopen = () => {
+  myDataChannel.send(input.value);
+  console.log('sent chat message');
+  // };
+  input.value = '';
+});
+
+const chatMessage = (message) => {
+  console.log('message', message);
+  const list = document.createElement('li');
+  list.innerText = message.data;
+  chatList.appendChild(list);
+};
