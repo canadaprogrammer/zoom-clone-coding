@@ -1001,10 +1001,11 @@
       chatForm.addEventListener('submit', (event) => {
         event.preventDefault();
         const input = chatForm.querySelector('input');
-        // myDataChannel.onopen = () => {
-        myDataChannel.send(input.value);
-        console.log('sent chat message');
-        // };
+        const message = input.value;
+        myDataChannel.send(message);
+        const list = document.createElement('li');
+        list.innerText = `me: ${message}`;
+        chatList.appendChild(list);
         input.value = '';
       });
 
