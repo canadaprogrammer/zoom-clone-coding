@@ -1025,8 +1025,3 @@
 - If you use a server, Socket.IO is good choice.
 - If you want to send messages peer to peer, but you don't have a server, data channel is a way.
 -
-
-## Install dependencies after cloning from git
-
-- `git clone git@github.com:canadaprogrammer/zoom-clone-coding.git`
-- `npm install`
